@@ -1,0 +1,65 @@
+table.tetristable{
+    border-spacing: 0px;
+    border-color: gold;
+    border-width: 2px;
+    border-style: solid;
+}
+
+table.tetristable td{
+    border-width: 1px;
+    border-style: solid;
+    padding: 0px;
+    width: 15px;
+    height: 15px;
+    opacity: 0.5;
+}
+
+table.tetristable td.ghost:not(.empty){
+    opacity: 0.2;
+}
+
+table.tetristable tr.block td{
+    border-color: black;
+    background-color: black;
+    opacity: 0.7;
+}
+
+table.tetristable tr td.empty, body table.tetristable.pause tr td{
+    background-color: black;
+    border-color: #1B1B1B;
+}
+
+table.tetristable tr td.cyan{
+    background-color: cyan;
+    border-color: black;
+}
+
+table.tetristable tr td.yellow{
+    background-color: yellow;
+    border-color: black;
+}
+
+table.tetristable tr td.purple{
+    background-color: purple;
+    border-color: black;
+}
+
+table.tetristable tr td.green{
+    background-color: green;
+    border-color: black;
+}
+
+table.tetristable tr td.red{
+    background-color: red;
+    border-color: black;
+}
+
+table.tetristable tr td.blue{
+    background-color: blue;
+    border-color: black;
+}
+
+table.tetristable tr td.orange{
+    background-color: orange;
+    border-color: black;
+}

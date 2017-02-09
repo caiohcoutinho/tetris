@@ -1,0 +1,36 @@
+{
+  "name": "tetris",
+  "version": "0.0.0",
+  "description": "",
+  "main": "target/ego.js",
+  "dependencies": {
+    "express": "~4.13.4",
+    "browserify": "~13.0.0",
+    "react-dom": "~15.0.1",
+    "react": "~15.0.1",
+    "babelify": "~7.2.0",
+    "babel-preset-react": "~6.5.0",
+    "body-parser": "~1.0.1",
+    "mongoose": "~4.4.12"
+  },
+  "devDependencies": {
+    "karma-chrome-launcher": "~0.2.3",
+    "jasmine": "~2.4.1",
+    "karma": "~0.13.22",
+    "karma-jasmine": "~0.3.8",
+    "jasmine-core": "~2.4.1",
+    "karma-phantomjs-launcher": "~1.0.0",
+    "phantomjs": "~2.1.7",
+    "phantomjs-prebuilt": "~2.1.7",
+    "mongodb": "~2.1.16",
+    "mongoose": "~4.4.12"
+  },
+  "scripts": {
+    "start": "node src/main/server/server.js",
+    "test": "./node_modules/karma/bin/karma start --single-run --no-auto-watch",
+    "autotest": "./node_modules/karma/bin/karma start",
+    "debug": "./node_modules/karma/bin/karma start --browsers Chrome"
+  },
+  "author": "caiohcoutinho",
+  "license": "BSD-2-Clause"
+}
