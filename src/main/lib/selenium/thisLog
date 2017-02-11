@@ -1,0 +1,17 @@
+02:11:50.448 INFO - Selenium build info: version: '3.0.1', revision: '1969d75'
+02:11:50.448 INFO - Launching a standalone Selenium Server
+02:11:50.503 INFO - Driver provider org.openqa.selenium.ie.InternetExplorerDriver registration is skipped:
+ registration capabilities Capabilities [{ensureCleanSession=true, browserName=internet explorer, version=, platform=WINDOWS}] does not match the current platform LINUX
+02:11:50.503 INFO - Driver provider org.openqa.selenium.edge.EdgeDriver registration is skipped:
+ registration capabilities Capabilities [{browserName=MicrosoftEdge, version=, platform=WINDOWS}] does not match the current platform LINUX
+02:11:50.503 INFO - Driver class not found: com.opera.core.systems.OperaDriver
+02:11:50.503 INFO - Driver provider com.opera.core.systems.OperaDriver registration is skipped:
+Unable to create new instances on this machine.
+02:11:50.503 INFO - Driver class not found: com.opera.core.systems.OperaDriver
+02:11:50.503 INFO - Driver provider com.opera.core.systems.OperaDriver is not registered
+02:11:50.504 INFO - Driver provider org.openqa.selenium.safari.SafariDriver registration is skipped:
+ registration capabilities Capabilities [{browserName=safari, version=, platform=MAC}] does not match the current platform LINUX
+02:11:50.558 INFO - Selenium Server is up and running
+02:11:56.835 INFO - SessionCleaner initialized with insideBrowserTimeout 0 and clientGoneTimeout 1800000 polling every 180000
+02:11:56.859 INFO - Executing: [new session: Capabilities [{rotatable=true, locationContextEnabled=true, loggingPrefs=org.openqa.selenium.logging.LoggingPreferences@79183add, browserName=firefox, javascriptEnabled=true, handlesAlerts=true, requestOrigins={name=webdriverio, version=4.6.2, url=http://webdriver.io}}]])
+02:11:56.913 INFO - Error: internal error: SHA-1 not available.

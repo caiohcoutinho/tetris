@@ -14,16 +14,17 @@
     "mongoose": "~4.4.12"
   },
   "devDependencies": {
-    "karma-chrome-launcher": "~0.2.3",
     "jasmine": "~2.4.1",
-    "karma": "~0.13.22",
-    "karma-jasmine": "~0.3.8",
     "jasmine-core": "~2.4.1",
+    "karma": "~0.13.22",
+    "karma-chrome-launcher": "~0.2.3",
+    "karma-jasmine": "~0.3.8",
     "karma-phantomjs-launcher": "~1.0.0",
+    "mongodb": "~2.1.16",
+    "mongoose": "~4.4.12",
     "phantomjs": "~2.1.7",
     "phantomjs-prebuilt": "~2.1.7",
-    "mongodb": "~2.1.16",
-    "mongoose": "~4.4.12"
+    "webdriverio": "^4.6.2"
   },
   "scripts": {
     "start": "node src/main/server/server.js",

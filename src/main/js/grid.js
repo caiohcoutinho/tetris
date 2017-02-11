@@ -331,9 +331,9 @@ var GridTable = React.createClass({
   },
   componentDidMount: function(){
     var nextTetrimino = this.nextTetrimino;
-    var speed = calculateSpeed(this.state.level);
     var t = 0;
     var tick = function(){
+        var speed = calculateSpeed(this.state.level);
         var state = this.state;
         var playBlockSound = this.playBlockSound;
         var pieces = state.pieces;
@@ -380,7 +380,7 @@ var GridTable = React.createClass({
                         newPoints += completedRows * 100;
                     }
                     state.completedRowsThisLevel += completedRows;
-                    if(state.completedRowsThisLevel >= 1){  // NEXT LEVEL! >=D
+                    if(state.completedRowsThisLevel >= 10){  // NEXT LEVEL! >=D
                         state.completedRowsThisLevel = 0;
                         state.level++;
                         state.levelSign = now;
@@ -453,7 +453,7 @@ var GridTable = React.createClass({
                 }
             });
             this.setState(state);
-        } else if(code == 38) { // hard dro
+        } else if(code == 38) { // hard drop
             _.each(state.pieces, function(piece){
                 var position = piece.position
                 var falling = true;
@@ -461,64 +461,64 @@ var GridTable = React.createClass({
                 while(falling){
                     falling = move(state, delta[0], delta[1]);
                 }
-                var now = _.now();
-                var pieces = state.pieces;
-                var size = pieces.length;
-                _.each(pieces, function(piece){
-                    var lock = state.lock;
-                    if(now - lock > 100){
-                        var position = piece.position;
-                        _.each(piece.getShape(), function(row, j){
-                            _.each(row, function(cell, i){
-                                var fixX = position[1]+i;
-                                var fixY = position[0]+j;
-                                if(cell && exists(state.rows, fixY, fixX)){
-                                    state.rows[fixY][fixX].color = piece.color;
-                                    state.rows[fixY][fixX].type = "solid";
-                                }
-                            });
-                        });
-                        pieces.splice(piece);
-                        playBlockSound();
-                    }
-                });
-                var completedRows = completeRows(state.rows);
-                var newPoints = 0;
-                if(completedRows == 4){
-                    newPoints += 800; // tetris! \o/
-                } else{
-                    newPoints += completedRows * 100;
-                }
-                state.completedRowsThisLevel += completedRows;
-                if(state.completedRowsThisLevel >= 1){  // NEXT LEVEL! >=D
-                    state.completedRowsThisLevel = 0;
-                    state.level++;
-                    state.levelSign = now;
-                }
-                if(pieces.length < size && newPoints > 0){ // a piece was removed and it made points
-                    state.combo++;
-                } else if(newPoints <= 0){  // lost the combo =(
-                    state.combo = 0;
-                }
-                var comboPoints = 0;
-                if(state.combo > 1){
-                    comboPoints = (-1+state.combo)*50;
-                }
-                state.points += newPoints + comboPoints;
-                var overflow = gameOverflow(state.rows);
-                if(overflow){
-                    this.gameover();
-                } else if(pieces.length == 0){
-                    var tetrimino = nextTetrimino();
-                    pieces.push(tetrimino);
-                    state.justSwapped = false;
-                    var colision = collide(state.rows, tetrimino, 2, 0);
-                    if(colision){
-                        this.gameover();
-                    }
-                }
-                this.setState(state);
             });
+            var now = _.now();
+            var pieces = state.pieces;
+            var size = pieces.length;
+            _.each(pieces, function(piece){
+                var lock = state.lock;
+                if(now - lock > 100){
+                    var position = piece.position;
+                    _.each(piece.getShape(), function(row, j){
+                        _.each(row, function(cell, i){
+                            var fixX = position[1]+i;
+                            var fixY = position[0]+j;
+                            if(cell && exists(state.rows, fixY, fixX)){
+                                state.rows[fixY][fixX].color = piece.color;
+                                state.rows[fixY][fixX].type = "solid";
+                            }
+                        });
+                    });
+                    pieces.splice(piece);
+                    //playBlockSound();
+                }
+            });
+            var completedRows = completeRows(state.rows);
+            var newPoints = 10;
+            if(completedRows == 4){
+                newPoints += 800; // tetris! \o/
+            } else{
+                newPoints += completedRows * 100;
+            }
+            state.completedRowsThisLevel += completedRows;
+            if(state.completedRowsThisLevel >= 10){  // NEXT LEVEL! >=D
+                state.completedRowsThisLevel = 0;
+                state.level++;
+                state.levelSign = now;
+            }
+            if(pieces.length < size && newPoints > 0){ // a piece was removed and it made points
+                state.combo++;
+            } else if(newPoints <= 0){  // lost the combo =(
+                state.combo = 0;
+            }
+            var comboPoints = 0;
+            if(state.combo > 1){
+                comboPoints = (-1+state.combo)*50;
+            }
+            state.points += newPoints + comboPoints;
+            var overflow = gameOverflow(state.rows);
+            if(overflow){
+                this.gameover();
+            } else if(pieces.length == 0){
+                var tetrimino = this.nextTetrimino();
+                pieces.push(tetrimino);
+                state.justSwapped = false;
+                var colision = collide(state.rows, tetrimino, 2, 0);
+                if(colision){
+                    this.gameover();
+                }
+            }
+            this.setState(state);
         } else if(code == 13){
             this.swap();
         }
