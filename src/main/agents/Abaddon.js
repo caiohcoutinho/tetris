@@ -6,33 +6,68 @@ var options = {
     }
 };
 
+console.log("Abaddon is running");
+
 var browser = webdriverio.remote(options).init();
 
 var browserReady = false;
 
 var tick = _.now();
-browser.url('localhost:3000/html/tetris.html').then(function(){
-    browserReady = true;
-})
+
+console.log("Opening browser")
+browser = browser.url('localhost:3000/html/tetris.html');
 
 var initTime = _.now();
 var lastAction = initTime;
 var actions = 0;
 
-var takeAction = function(){
-    if(!!browserReady){
-        var now = _.now();
-        if(now - lastAction > 1000){
-            if(actions < 8){
-                lastAction = now;
-                browser.keys("ArrowUp");
-                actions++;
-            } else{
-                browser.quit();
-                process.exit(1);
-            }
-        }
+var id;
+
+var driver = {
+    up: function(){
+        browser.keys("ArrowUp");
+    },
+    down: function(){
+        browser.keys("ArrowDown");
+    },
+    left: function(){
+        browser.keys("ArrowLeft");
+    },
+    right: function(){
+        browser.keys("ArrowRight");
+    },
+    spin: function(){
+        browser.keys(" ");
+    },
+    swap: function(){
+        browser.keys("Enter");
     }
 }
 
-setInterval(takeAction, 500);
+var keyOptions = _.keys(driver);
+
+var takeAction = function(){
+    try{
+        var now = _.now();
+        if(now - lastAction > 100){
+            if(actions < 50){
+                lastAction = now;
+                var randomAction = _.random(0, keyOptions.length-1);
+                console.log(keyOptions[randomAction]);
+                driver[keyOptions[randomAction]]();
+                actions++;
+            } else{
+                clearInterval(id);
+                console.log("Closing browser");
+                browser.end();
+                setTimeout(function(){
+                    process.exit();
+                }, 1000);
+            }
+        }
+    } catch(e){
+        console.log(e);
+    }
+}
+
+id = setInterval(takeAction, 100);

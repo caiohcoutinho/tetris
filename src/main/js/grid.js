@@ -150,6 +150,9 @@ var Piece = function(shapes, position, color){
     this.rotateNext = function(){
         this.shapeIndex = this.nextShapeIndex();
     };
+    this.rotatePrevious = function(){
+        this.shapeIndex = this.previousShapeIndex();
+    };
     this.getShape = function(){
         return this.shapes[this.shapeIndex];
     };
@@ -298,7 +301,7 @@ var GridTable = React.createClass({
         completedRowsThisLevel: 0,
         level: 0,
         levelSign: null,
-        ghost: false,
+        ghost: true,
         queue: queue,
         justSwapped: false,
     }
@@ -453,6 +456,15 @@ var GridTable = React.createClass({
                 }
             });
             this.setState(state);
+        } else if(code == 8){
+            _.each(state.pieces, function(piece){
+                var position = piece.position
+                if(!colisionCheck(state.rows, piece.previousShape(), position[1], position[0])){
+                    piece.rotatePrevious();
+                } else{
+                    // TODO: som de travado.
+                }
+            });
         } else if(code == 38) { // hard drop
             _.each(state.pieces, function(piece){
                 var position = piece.position
@@ -534,6 +546,7 @@ var GridTable = React.createClass({
     }
   },
   pause: function(){
+    console.log("pause");
     this.state.pause = !this.state.pause;
     this.setState(this.state);
     if(this.state.pause){
@@ -760,8 +773,8 @@ var GridTable = React.createClass({
                         </td>
                         <td>
                             <h3>
-                            <span onClick={this.pause}>{this.state.pause ? "Unpause" : "Pause"}</span><br/>
-                            <span>Ghost? <input type="checkbox" onClick={this.ghost}/></span><br/>
+                            <span class="spanPause" onClick={this.pause}>{this.state.pause ? "Unpause" : "Pause"}</span><br/>
+                            <span>Ghost? <input class="inputGhost" type="checkbox" onClick={this.ghost}/></span><br/>
                             You have {this.state.points} points.<br/>
                             Level: {this.state.level}<br/>
                             { this.state.gameover ?(<span onClick={this.reset}>Game Over! Restart?</span>):""}
