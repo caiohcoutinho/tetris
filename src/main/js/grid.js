@@ -496,7 +496,7 @@ var GridTable = React.createClass({
                 }
             });
             var completedRows = completeRows(state.rows);
-            var newPoints = 10;
+            var newPoints = 0;
             if(completedRows == 4){
                 newPoints += 800; // tetris! \o/
             } else{
@@ -634,7 +634,7 @@ var GridTable = React.createClass({
                             </table>
                         </td>
                         <td>
-                            <table className={this.state.pause ? "tetristable pause" : "tetristable"}>
+                            <table className={this.state.pause ? "tetristable main pause" : "tetristable main"}>
                                 <tbody>
                                     {
                                         _.map(result, function(row, i){
@@ -645,6 +645,7 @@ var GridTable = React.createClass({
                                                                 return (
                                                                     <td key={j}
                                                                     className={cell.type == 'ghost' ? cell.color+' ghost' : cell.color}
+                                                                    data={JSON.stringify({x:i, y:j, type: cell.type})}
                                                                     >
                                                                     </td>
                                                                 )

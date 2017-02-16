@@ -14,7 +14,7 @@ table.tetristable td{
     opacity: 0.5;
 }
 
-table.tetristable td.ghost:not(.empty){
+table.tetristable:not(.pause) td.ghost:not(.empty){
     opacity: 0.2;
 }
 
