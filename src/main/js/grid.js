@@ -17,7 +17,7 @@ var drawPiece = function(rows, piece, drawGhost){
                     }
                     rows[ci][cj] = {
                         color: piece.color,
-                        type: "solid",
+                        type: "tetrimino",
                     }
                 }
             }
@@ -58,9 +58,11 @@ var drawPiece = function(rows, piece, drawGhost){
                     var ci = i+ghostPosition[0];
                     var cj = j+ghostPosition[1];
                     if(exists(rows, ci, cj)){
-                        rows[ci][cj] = {
-                           color: piece.color,
-                           type: "ghost",
+                        if(rows[ci][cj].type != 'tetrimino'){
+                            rows[ci][cj] = {
+                               color: piece.color,
+                               type: "ghost",
+                            }
                         }
                     }
                 }
@@ -645,7 +647,7 @@ var GridTable = React.createClass({
                                                                 return (
                                                                     <td key={j}
                                                                     className={cell.type == 'ghost' ? cell.color+' ghost' : cell.color}
-                                                                    data={JSON.stringify({x:i, y:j, type: cell.type})}
+                                                                    data={JSON.stringify({x:j, y:i, type: cell.type})}
                                                                     >
                                                                     </td>
                                                                 )
