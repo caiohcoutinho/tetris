@@ -336,7 +336,7 @@ var GridTable = React.createClass({
   },
   componentDidMount: function(){
     var nextTetrimino = this.nextTetrimino;
-    var t = 0;
+    var t;
     var tick = function(){
         var speed = calculateSpeed(this.state.level);
         var state = this.state;
@@ -352,7 +352,7 @@ var GridTable = React.createClass({
             pieces.push(tetrimino);
             state.justSwapped = false;
         } else{
-            if(t > speed){
+            if(_.isUndefined(t) || t > speed){
                 t = 0;
                 if(move(state, 0, 1)){
                     state.lock = _.now();
