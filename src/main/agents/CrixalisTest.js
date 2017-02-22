@@ -28,6 +28,50 @@ it("Draw", function(){
     img.destroy();
 })
 
+describe('Crixalis', function(){
+  xit('should find the piece', function(){
+        this.timeout(0);
+        stage = [];
+        _.each(_.range(22), function(row, y){
+           _.each(_.range(10), function(cell, x){
+                stage.push({
+                    x: x,
+                    y: y,
+                    type: 'empty',
+                    heat: 0,
+                });
+           })
+        });
+
+        flip(stage, 0, 1, 'tetrimino');
+        flip(stage, 0, 2, 'tetrimino');
+        flip(stage, 1, 1, 'tetrimino');
+        flip(stage, 1, 2, 'tetrimino');
+
+        flip(stage, 2, 21, 'solid');
+        flip(stage, 3, 21, 'solid');
+        flip(stage, 4, 21, 'solid');
+        flip(stage, 4, 20, 'solid');
+
+        flip(stage, 5, 21, 'solid');
+        flip(stage, 6, 21, 'solid');
+        flip(stage, 7, 21, 'solid');
+        flip(stage, 8, 21, 'solid');
+
+        flip(stage, 2, 20, 'solid');
+        flip(stage, 3, 20, 'solid');
+        flip(stage, 3, 19, 'solid');
+        flip(stage, 4, 19, 'solid');
+
+        flip(stage, 5, 19, 'solid');
+        flip(stage, 6, 19, 'solid');
+        flip(stage, 6, 20, 'solid');
+        flip(stage, 7, 20, 'solid');
+
+        console.log(Crixalis.findPiece(stage));
+  });
+})
+
 describe('Crixalis ', function() {
   it.only('plans correctly', function(){
     this.timeout(0);
@@ -42,29 +86,43 @@ describe('Crixalis ', function() {
             });
        })
     });
-    flip(stage, 1, 2, 'tetrimino');
-    flip(stage, 1, 3, 'tetrimino');
-    flip(stage, 1, 4, 'tetrimino');
-    flip(stage, 1, 5, 'tetrimino');
+
+    flip(stage, 3, 1, 'tetrimino');
+    flip(stage, 3, 2, 'tetrimino');
+    flip(stage, 4, 1, 'tetrimino');
+    flip(stage, 4, 2, 'tetrimino');
 
     var block = 15;
-
 
     var white = gd.trueColor(255, 255, 255);
     var red = gd.trueColor(255, 0, 0);
     var blue = gd.trueColor(0, 0, 255);
     var black = gd.trueColor(0, 0, 0);
-    var yellow = gd.trueColor(0, 255, 255);
+    var yellow = gd.trueColor(255, 255, 0);
 
-    _.each(_.range(10), function(i){
-       _.each(_.range(4), function(j){
-          if(i != 0){
-            flip(stage, i, 21-j, "solid");
-          }
-       });
-    });
+    flip(stage, 2, 21, 'solid');
+    flip(stage, 3, 21, 'solid');
+    flip(stage, 4, 21, 'solid');
+    flip(stage, 4, 20, 'solid');
+
+    flip(stage, 5, 21, 'solid');
+    flip(stage, 6, 21, 'solid');
+    flip(stage, 7, 21, 'solid');
+    flip(stage, 8, 21, 'solid');
+
+    flip(stage, 2, 20, 'solid');
+    flip(stage, 3, 20, 'solid');
+    flip(stage, 3, 19, 'solid');
+    flip(stage, 4, 19, 'solid');
+
+    flip(stage, 5, 19, 'solid');
+    flip(stage, 6, 19, 'solid');
+    flip(stage, 6, 20, 'solid');
+    flip(stage, 7, 20, 'solid');
 
     var base = gd.createTrueColorSync(10 * block, 22 * block);
+    var targets = gd.createTrueColorSync(10 * block, 22 * block);
+
     _.each(_.groupBy(stage, "y"), function(row, y){
         _.each(row, function(cell, x){
             var type = cell.type;
@@ -79,12 +137,13 @@ describe('Crixalis ', function() {
             }
             base.filledRectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), color);
             base.rectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), white);
+
+            targets.rectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), white);
         });
     })
     base.saveFile('./base.jpg');
     base.destroy();
 
-    console.log("");
     var goals = Crixalis.bfs(stage);
     _.each(goals, function(g){
         g.originalValue = Crixalis.evaluate(g.stage);
@@ -101,59 +160,70 @@ describe('Crixalis ', function() {
     var maxValue = _.max(goals, getOriginalValue).originalValue;
     var minValue = _.min(goals, getOriginalValue).originalValue;
 
-    console.log("MinValue = "+minValue);
-    console.log("MaxValue = "+maxValue);
+    //console.log("MinValue = "+minValue);
+    //console.log("MaxValue = "+maxValue);
 
-    _.each(goals, function(g){
-        g.value = clean( 1000 * (g.originalValue - minValue) / (maxValue - minValue));
-    });
+    if(maxValue - minValue != 0){
+        _.each(goals, function(g){
+            g.value = clean( 1000 * (g.originalValue - minValue) / (maxValue - minValue));
+        });
+    } else{
+        _.each(goals, function(g){
+            g.value = clean( 1 );
+        });
+    }
+
+    goals = _.sortBy(goals, getValue);
 
     var maxNValue = _.max(goals, getValue).value;
     var minNValue = _.min(goals, getValue).value;
 
-    console.log("MinNValue = "+minNValue);
-    console.log("MaxNValue = "+maxNValue);
+    //console.log("MinNValue = "+minNValue);
+    //console.log("MaxNValue = "+maxNValue);
 
     var maxHeat = 0;
     var minHeat = 0;
 
-    var targets = gd.createTrueColorSync(10 * block, 22 * block);
-
     _.each(goals, function(g, z){
-        if(true || z == 0){
-            var shape = Crixalis.TETRIMINOS[g.tetriminoLocation.currentTetrimino][g.tetriminoLocation.foundShape];
-            var position = g.tetriminoLocation.foundPosition;
-            var ix = position[0];
-            var iy = position[1];
-            _.each(shape, function(fx, j){
-                _.each(fx, function(cell, i){
-                    var cellGrid = _.findWhere(stage, {x: ix + i, y: iy + j});
-                    if(!_.isUndefined(cellGrid)){
-                        if(cell){
-                            var newHeat = cellGrid.heat + g.value;
-                            if(newHeat > maxHeat){
-                                maxHeat = newHeat;
-                            }
-                            if(newHeat < minHeat){
-                                minHeat = newHeat;
-                            }
-                            cellGrid.heat = newHeat;
+        var shape = Crixalis.TETRIMINOS[g.tetriminoLocation.currentTetrimino][g.tetriminoLocation.foundShape];
+        var position = g.tetriminoLocation.foundPosition;
+        var ix = position[0];
+        var iy = position[1];
+        //console.log("Final position: "+ix+" "+iy);
+        //console.log("Value = "+g.value);
+        _.each(shape, function(fx, j){
+            _.each(fx, function(cell, i){
+                var cellGrid = _.findWhere(stage, {x: ix + i, y: iy + j});
+                if(!_.isUndefined(cellGrid)){
+                    if(cell){
+                        var newHeat = cellGrid.heat + g.value;
+                        if(newHeat > maxHeat){
+                            maxHeat = newHeat;
+                        }
+                        if(newHeat < minHeat){
+                            minHeat = newHeat;
+                        }
+                        cellGrid.heat = newHeat;
 
-                            var tx = ix + i;
-                            var ty = iy + j;
+                        var tx = ix + i;
+                        var ty = iy + j;
+                        if(z == _.size(goals) - 1){
+                            targets.filledRectangle(clean(tx * block), clean(ty * block), clean( (tx+1) * block), clean( (ty+1) * block), red);
+                            targets.rectangle(clean(tx * block), clean(ty * block), clean( (tx+1) * block), clean( (ty+1) * block), white);
+                        } else{
                             targets.filledRectangle(clean(tx * block), clean(ty * block), clean( (tx+1) * block), clean( (ty+1) * block), yellow);
                             targets.rectangle(clean(tx * block), clean(ty * block), clean( (tx+1) * block), clean( (ty+1) * block), white);
                         }
                     }
-                });
+                }
             });
-        }
+        });
     });
     targets.saveFile('./targets.jpg');
     targets.destroy();
 
-    console.log("Max = "+maxHeat);
-    console.log("Min = "+minHeat);
+    //console.log("Max = "+maxHeat);
+    //console.log("Min = "+minHeat);
 
     var colorMax = 255;
 
@@ -172,22 +242,25 @@ describe('Crixalis ', function() {
     var average = (maxHeat + minHeat) / 2;
 
     var img = gd.createTrueColorSync(10 * block, 22 * block);
-    _.each(_.groupBy(stage, "y"), function(row, y){
-        _.each(row, function(cell, x){
-            var h = cell.heat;
-            var red = ra * h + rb;
-            if(h <= average){
-                var green = ga1 * h + gb1;
-            } else{
-                var green = ga2 * h + gb2;
-            }
-            var blue = ba * h + bb;
 
-            var color = gd.trueColor(clean(red), clean(green), clean(blue));
-            img.filledRectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), color);
-            img.rectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), white);
+    if(maxHeat - minHeat != 0){
+        _.each(_.groupBy(stage, "y"), function(row, y){
+            _.each(row, function(cell, x){
+                var h = cell.heat;
+                var red = ra * h + rb;
+                if(h <= average){
+                    var green = ga1 * h + gb1;
+                } else{
+                    var green = ga2 * h + gb2;
+                }
+                var blue = ba * h + bb;
+
+                var color = gd.trueColor(clean(red), clean(green), clean(blue));
+                img.filledRectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), color);
+                img.rectangle(clean(x * block), clean(y * block), clean( (x+1) * block), clean( (y+1) * block), white);
+            });
         });
-    });
+    }
     img.saveFile('./heat.jpg');
     img.destroy();
 

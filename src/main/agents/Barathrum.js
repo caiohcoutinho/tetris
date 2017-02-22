@@ -57,12 +57,14 @@ var takeAction = function(){
         if(now - lastAction > 1){
             if(actions < 10){
                 lastAction = now;
-                var query = ".tetristable.main td";
+                //var query = ".tetristable.main td";
+                var query = ".driverTest";
 
                 var result;
 
                 var tick = _.now();
                 browser.getAttribute(query, "data").then(function(elements){
+                    console.log(JSON.stringify(elements));
                     var diff = _.now() - tick;
                     time += diff;
                     console.log("Browser call took: "+(diff));

@@ -289,6 +289,30 @@ var GridTable = React.createClass({
     queue[0] = buildTetrimino();
     queue[1] = buildTetrimino();
     queue[2] = buildTetrimino();
+    var zipData = function(){
+        var copy = _.map(this.rows, function(row){
+            return _.map(row, function(cell){
+                return {
+                    color: cell.color,
+                    type: cell.type
+                }
+            });
+        });
+        _.each(this.pieces, function(piece){
+            var position = piece.position;
+            _.each(piece.getShape(), function(row, j){
+                _.each(row, function(cell, i){
+                    var fixX = position[1]+i;
+                    var fixY = position[0]+j;
+                    if(cell && exists(copy, fixY, fixX)){
+                        copy[fixY][fixX].color = piece.color;
+                        copy[fixY][fixX].type = "tetrimino";
+                    }
+                });
+            });
+        });
+        return copy;
+    }
     return {
         pause: false,
         rows: rows,
@@ -306,6 +330,7 @@ var GridTable = React.createClass({
         ghost: true,
         queue: queue,
         justSwapped: false,
+        zipData: zipData
     }
   },
   swap: function(){
@@ -593,6 +618,7 @@ var GridTable = React.createClass({
                 src="/mp3/5.wav"
                 ></audio>
             </div>
+            <input type="hidden" className="driverInfo" data={JSON.stringify(this.state.zipData())}></input>
             <table>
                 <tbody>
                     <tr>

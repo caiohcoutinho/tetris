@@ -1,10 +1,17 @@
 var webdriverio = require('webdriverio');
+var hash = require('object-hash');
 var _ = require('underscore');
 var options = {
     desiredCapabilities: {
         browserName: 'chrome',
     }
 };
+
+var PERF_TAKE_ACTION = false;
+var PERF_BFS = false;
+var DEBUG_BFS = false;
+var DEBUG_EQUALS = false;
+var DEBUG_FIND_PIECE = false;
 
 var TETRIMINOS = { // TODO: Must add stochasticity to work when two shapes of the tetrimino are indistinguishible.
     i: [[[false, false, false, false], [true, true, true, true], [false, false, false, false], [false, false, false, false]],
@@ -169,8 +176,8 @@ var isLocked = function(node){
         var size = _.size(c);
         var willCollide = _.some(c, function(cell, i, list){
             var condition = cell.type == 'tetrimino' && ((i < (size - 1) && list[i+1].type == 'solid') || (i == size - 1));
-            if(condition){
-                //console.log(i+ " "+list[i+1]);
+            if(condition && cell.type == 'tetrimino'){
+                //console.log("isLocked Condition: "+condition+" "+i);
             }
             return condition;
         });
@@ -179,7 +186,7 @@ var isLocked = function(node){
 }
 
 var knownMoves = ["down", "left", "right", "spinCW", "spinCCW"];
-//var knownMoves = ["spinCW"];
+//var knownMoves = ["down"];
 
 var checkStage = function(stage, x, y){
     return _.findWhere(stage, {x: x, y: y});
@@ -213,16 +220,15 @@ var findPiece = function(stage, lastLocation){
     var tries = 0;
     var tick = _.now();
     if(!_.isUndefined(lastLocation) && !_.isUndefined(lastLocation.foundPosition)){
-        //console.log('reuse');
+        if(DEBUG_FIND_PIECE) console.log('reuse');
         var foundPosition = lastLocation.foundPosition;
         var found = _.some(TETRIMINOS, function(shapes, tetrimino){
-            //console.log("trying "+tetrimino);
+            if(DEBUG_FIND_PIECE) console.log("trying "+tetrimino);
             return _.some(shapes, function(shape, k){
-                //console.log("trying shape "+k);
+                if(DEBUG_FIND_PIECE) console.log("trying shape "+k);
                 return _.some(_.range(foundPosition[0]-offLimits-1, foundPosition[0]+offLimits+1), function(x){
                     return _.some(_.range(foundPosition[1]-offLimits-1, foundPosition[1]+offLimits+1), function(y){
-                        //console.log("trying "+x+" "+y+" ");
-                        //console.log(shape);
+                        if(DEBUG_FIND_PIECE) console.log("trying "+x+" "+y+" ");
                         tries++;
                         var notAllOutOfGrid = false;
                         var found = _.every(shape, function(tx, j){
@@ -235,20 +241,17 @@ var findPiece = function(stage, lastLocation){
                                 var tetriminoOutOfScreen = cell && outOfGrid;
 
                                 if(matchTetrimino){
-                                    //process.stdout.write("change to true");
                                     notAllOutOfGrid = true;
                                 }
 
                                 return !tetriminoOutOfScreen && (matchTetrimino || outOfGrid || matchEmpty);
                             });
                         });
-                        //process.stdout.write(" and the value is = "+notAllOutOfGrid);
-                        //console.log("");
                         if(found && notAllOutOfGrid){
                             currentTetrimino = tetrimino;
                             foundPosition = [x, y];
                             foundShape = k;
-                            //console.log(found);
+                            if(DEBUG_FIND_PIECE) console.log("Found! "+JSON.stringify(found));
                         }
                         return found && notAllOutOfGrid;
                     });
@@ -258,13 +261,13 @@ var findPiece = function(stage, lastLocation){
     }
     if(!found){
         var found = _.some(TETRIMINOS, function(shapes, tetrimino){
-            //console.log("trying "+tetrimino);
+            if(DEBUG_FIND_PIECE) console.log("trying "+tetrimino);
             return _.some(shapes, function(shape, k){
-                //console.log("trying shape "+k);
+                if(DEBUG_FIND_PIECE) console.log("trying shape "+k);
                 return _.some(_.range(-offLimits, numberOfColumns+offLimits), function(x){
                     return _.some(_.range(-offLimits, numberOfRows+offLimits), function(y){
-                        //console.log("trying "+x+" "+y+" ");
-                        //console.log(shape);
+                        if(DEBUG_FIND_PIECE) console.log("trying "+x+" "+y+" ");
+                        if(DEBUG_FIND_PIECE) console.log(shape);
                         tries++;
                         var notAllOutOfGrid = false;
                         var found = _.every(shape, function(tx, j){
@@ -277,20 +280,17 @@ var findPiece = function(stage, lastLocation){
                                 var tetriminoOutOfScreen = cell && outOfGrid;
 
                                 if(matchTetrimino){
-                                    //process.stdout.write("change to true");
                                     notAllOutOfGrid = true;
                                 }
 
                                 return !tetriminoOutOfScreen && (matchTetrimino || outOfGrid || matchEmpty);
                             });
                         });
-                        //process.stdout.write(" and the value is = "+notAllOutOfGrid);
-                        //console.log("");
                         if(found && notAllOutOfGrid){
                             currentTetrimino = tetrimino;
                             foundPosition = [x, y];
                             foundShape = k;
-                            //console.log(found);
+                            if(DEBUG_FIND_PIECE) console.log("Found! "+JSON.stringify(found));
                         }
                         return found && notAllOutOfGrid;
                     });
@@ -299,12 +299,13 @@ var findPiece = function(stage, lastLocation){
         });
     }
     var diff = (_.now()-tick);
-    //console.log("Tries "+tries+" "+diff);
-    return {
+    var obj = {
         currentTetrimino: currentTetrimino,
         foundPosition: foundPosition,
         foundShape: foundShape,
     }
+    if(DEBUG_FIND_PIECE) console.log(obj);
+    return obj;
 }
 
 var canMove = function(stage, move, found){
@@ -315,17 +316,30 @@ var canMove = function(stage, move, found){
     if(move == 'down'){
         return _.every(columns, function(column, i, thisColumns){
             return _.every(column, function(cell, j, thisColumn){
-                return cell.type != "tetrimino" ||
-                    (j < numberOfRows - 1 && thisColumn[j+1].type != "solid");
+                var condition = cell.type != "tetrimino" ||
+                                (j < (numberOfRows - 1) && thisColumn[j+1].type != "solid")
+
+                /*
+                if(cell.type == 'tetrimino' && i == 1){
+                    console.log(condition+" j = "+j);
+                }
+                */
+                return condition;
             });
         });
     } else if(move == 'left'){
-       return _.every(rows, function(row, i, thisRows){
+        var text = "";
+       var condition = _.every(rows, function(row, i, thisRows){
            return _.every(row, function(cell, j, thisRow){
-               return cell.type != "tetrimino" ||
+               var condition = cell.type != "tetrimino" ||
                    (j > 0 && thisRow[j-1].type != "solid");
+               if(cell.type == 'tetrimino' && condition){
+                    text += "["+i+","+j+"] ";
+               }
+               return condition;
            });
        });
+       return condition;
     } else if(move == 'right'){
        return _.every(rows, function(row, i, thisRows){
            return _.every(row, function(cell, j, thisRow){
@@ -346,6 +360,7 @@ var canMove = function(stage, move, found){
         }
 
         if(currentTetrimino == 'o'){
+            //console.log("o = "+move );
             return false;
         }
 
@@ -485,6 +500,55 @@ var takeMove = function(stage, move, found){
     return [];
 }
 
+var iterateOneStep = function(originalTetriminoLocation, action, maxX, maxY){
+    if(!_.isUndefined(originalTetriminoLocation) &&
+        !_.isUndefined(originalTetriminoLocation.foundPosition) &&
+        !_.isUndefined(originalTetriminoLocation.foundShape) &&
+        !_.isUndefined(originalTetriminoLocation.currentTetrimino)){
+        var tetriminoLocation = {
+            currentTetrimino: originalTetriminoLocation.currentTetrimino,
+            foundShape: originalTetriminoLocation.foundShape,
+            foundPosition: [
+                originalTetriminoLocation.foundPosition[0],
+                originalTetriminoLocation.foundPosition[1]
+            ],
+        }
+
+        //console.log(move+" "+JSON.stringify(tetriminoLocation));
+
+        var tick = _.now();
+        var lastAction = action;
+        if(!_.isUndefined(originalTetriminoLocation.foundPosition)){
+            if(lastAction == 'down'){
+                tetriminoLocation.foundPosition[1] += 1;
+            } else if(lastAction == 'left'){
+                tetriminoLocation.foundPosition[0] -= 1;
+            } else if(lastAction == 'right'){
+                tetriminoLocation.foundPosition[0] += 1;
+            }
+        }
+        if(!_.isUndefined(tetriminoLocation.foundShape)){
+            if(lastAction == 'spinCW'){
+                var size = _.size(TETRIMINOS[tetriminoLocation.currentTetrimino]);
+                if(tetriminoLocation.foundShape == size -1){
+                    tetriminoLocation.foundShape = 0;
+                } else{
+                    tetriminoLocation.foundShape++;
+                }
+            } else if(lastAction == 'spinCCW'){
+                var size = _.size(TETRIMINOS[tetriminoLocation.currentTetrimino]);
+                if(tetriminoLocation.foundShape == 0){
+                    tetriminoLocation.foundShape = size-1;
+                } else{
+                    tetriminoLocation.foundShape--;
+                }
+            }
+            //process.stdout.write("FixLocation "+move+" "+(_.now()-tick)+" ");
+        }
+    }
+    return tetriminoLocation;
+}
+
 var produceAdjacents = function(node, knownMoves, maxX, maxY){
     var a = _.now();
     var originalTetriminoLocation = node.tetriminoLocation;
@@ -496,99 +560,19 @@ var produceAdjacents = function(node, knownMoves, maxX, maxY){
     }
     //process.stdout.write("ProduceAdjacents = ");
     var adjacents = _.reduce(knownMoves, function(list, move){
-        if(!_.isUndefined(originalTetriminoLocation) &&
-            !_.isUndefined(originalTetriminoLocation.foundPosition) &&
-            !_.isUndefined(originalTetriminoLocation.foundShape) &&
-            !_.isUndefined(originalTetriminoLocation.currentTetrimino)){
-            var tetriminoLocation = {
-                currentTetrimino: originalTetriminoLocation.currentTetrimino,
-                foundShape: originalTetriminoLocation.foundShape,
-                foundPosition: [
-                    originalTetriminoLocation.foundPosition[0],
-                    originalTetriminoLocation.foundPosition[1]
-                ],
-            }
-
-            //console.log(move+" "+JSON.stringify(tetriminoLocation));
-
-            var tick = _.now();
-            var lastAction = node.action;
-            if(!_.isUndefined(originalTetriminoLocation.foundPosition)){
-                if(lastAction == 'down'){
-                    tetriminoLocation.foundPosition[1] += 1;
-                    if(tetriminoLocation.foundPosition[1] > maxY -1 ){
-                        tetriminoLocation.foundPosition[1] = maxY - 1;
-                    }
-                } else if(lastAction == 'left'){
-                    tetriminoLocation.foundPosition[0] -= 1;
-                    if(tetriminoLocation.foundPosition[0] < 0){
-                        tetriminoLocation.foundPosition[0] = 0;
-                    }
-                } else if(lastAction == 'right'){
-                    tetriminoLocation.foundPosition[0] += 1;
-                    if(tetriminoLocation.foundPosition[0] > maxX -1){
-                        tetriminoLocation.foundPosition[0] = maxX - 1;
-                    }
-                }
-            }
-            if(!_.isUndefined(tetriminoLocation.foundShape)){
-                if(lastAction == 'spinCW'){
-                    var size = _.size(TETRIMINOS[tetriminoLocation.currentTetrimino]);
-                    if(tetriminoLocation.foundShape == size -1){
-                        tetriminoLocation.foundShape = 0;
-                    } else{
-                        tetriminoLocation.foundShape++;
-                    }
-                } else if(lastAction == 'spinCCW'){
-                    var size = _.size(TETRIMINOS[tetriminoLocation.currentTetrimino]);
-                    if(tetriminoLocation.foundShape == 0){
-                        tetriminoLocation.foundShape = size-1;
-                    } else{
-                        tetriminoLocation.foundShape--;
-                    }
-                }
-                //process.stdout.write("FixLocation "+move+" "+(_.now()-tick)+" ");
-            }
-        }
+        var tetriminoLocation = iterateOneStep(originalTetriminoLocation, node.action, maxX, maxY);
         var tick = _.now();
         var condition = canMove(node.stage, move, tetriminoLocation);
-        //process.stdout.write("CanMove "+move+" "+(_.now()-tick)+" ");
         if(condition){
             var tick = _.now();
             var newStage = takeMove(node.stage, move, tetriminoLocation);
             //process.stdout.write("takeMove "+move+" "+(_.now()-tick)+" ");
+            //console.log("Tetrimino Location Position: " + tetriminoLocation.foundPosition);
             list.push(new Node(newStage, node, move, tetriminoLocation));
         }
         return list;
     }, []);
 
-    /*
-    console.log("");
-    console.log("Size: "+_.size(adjacents));
-    console.log("");
-    console.log("Original");
-    printStage(node.stage);
-    console.log("");
-    console.log("Adjacents: ");
-    _.each(adjacents, function(adj){
-        process.stdout.write(adj.action);
-        _.each(_.range(13-_.size(adj.action)), function(){
-            process.stdout.write(" ");
-        })
-    })
-    console.log("");
-    _.each(_.groupBy(node.stage, "y"), function(row, y){
-        _.each(adjacents, function(adj){
-            _.each(_.groupBy(adj.stage, "y")[y], function(cell){
-                process.stdout.write(typeMap[cell.type]);
-            });
-            process.stdout.write("   ");
-        })
-        console.log("");
-    })
-    //process.stdout.write("total = "+(_.now()-a));
-    //console.log("");
-    */
     return adjacents;
 }
 
@@ -620,16 +604,32 @@ var printStages = function(a, b){
 }
 
 var equals = function(a, b){
-    var rowsA = _.groupBy(a, "y");
-    var rowsB = _.groupBy(b, "y");
 
-    var result = _.every(rowsA, function(rowA, i){
-         return _.every(rowA, function(cell, j){
-             return cell.type == rowsB[i][j].type;
-         });
-     })
+    var hashA = generateHash(a);
+    var hashB = generateHash(b);
 
-    if(false && Math.random() >= 0.005){
+    return hashA == hashB;
+
+    var groupsA = _.groupBy(a, "type");
+    var groupsB = _.groupBy(b, "type");
+
+    var result = _.every(groupsA["tetrimino"], function(cell, i){
+        return cell.type == groupsB["tetrimino"][i].type;
+    });
+
+    if(!!result){
+        result = _.every(groupsA["solid"], function(cell, i){
+            return cell.type == groupsB["solid"][i].type;
+        });
+    }
+
+    if(!!result){
+        result = _.every(groupsA["empty"], function(cell, i){
+            return cell.type == groupsB["empty"][i].type;
+        });
+    }
+
+    if(DEBUG_EQUALS){
         console.log("Equals = "+result);
         printStages(a, b);
     }
@@ -643,81 +643,126 @@ var contains = function(stages, b){
     })
 }
 
+var generateHash = function(stage){
+    var hash = "";
+    _.each(stage, function(cell){
+        hash += typeMap[cell.type];
+    });
+    return hash;
+}
+
 var bfs = function(stage){
+
+    var start = _.now();
 
     var countDeques = 0;
     var numberOfColumns = _.size(_.groupBy(stage, 'x'));
     var numberOfRows = _.size(_.groupBy(stage, 'y'));
-    //process.stdout.write("Begin bfs: ");
+    if(DEBUG_BFS) process.stdout.write("Begin bfs: ");
     var queue = [new Node(stage)];
     var leafs = [];
     var clearedStages = [stage];
+    var clearedStagesHashes = [hash(stage)];
+
+    var totalIterateTime = 0;
+    var totalProduceTime = 0;
+    var totalContainsTime = 0;
+    var totalCleanTime = 0;
+    var totalLockTime = 0;
+    var totalLockCount = 0;
+    var totalContainsCount = 0;
+    var totalGenHashTime = 0;
 
     while(!_.isEmpty(queue)){
-        //process.stdout.write("NotEmpty ");
+        if(DEBUG_BFS) process.stdout.write("NotEmpty ");
         var s = queue.shift();
         countDeques++;
-        //process.stdout.write("Shift ");
+        if(DEBUG_BFS) process.stdout.write("Shift ");
+        var lockTime = _.now();
         if(isLocked(s)){ // Does not know how to slide.
-            //process.stdout.write("IsLocked ");
+            totalLockCount++;
+            totalLockTime += (_.now() - lockTime);
+            if(DEBUG_BFS) process.stdout.write("IsLocked ");
+
+            var iterateTime = _.now();
+            s.tetriminoLocation = iterateOneStep(s.tetriminoLocation, s.action, numberOfColumns, numberOfRows);
+            totalIterateTime += (_.now() - iterateTime);
             leafs.push(s);
-            //process.stdout.write("PushLeaf ");
+
+            if(DEBUG_BFS) process.stdout.write("PushLeaf ");
         } else{
-            //process.stdout.write("IsNotLocked ");
+            totalLockCount++;
+            totalLockTime += (_.now() - lockTime);
+            if(DEBUG_BFS) process.stdout.write("IsNotLocked ");
+            var produceTime = _.now();
             var adjacents = produceAdjacents(s, knownMoves, numberOfColumns, numberOfRows);
+            totalProduceTime += (_.now() - produceTime);
 
-            /*
-            var numberOfRows = _.size(_.groupBy(s.stage, "y"));
-
-            console.log("Size: "+_.size(adjacents));
-            _.each(_.range(numberOfRows), function(y){
-                _.each(adjacents, function(adj){
-                    _.each(_.groupBy(adj.stage, "y")[y], function(cell){
-                        process.stdout.write(typeMap[cell.type]);
-                    });
-                    process.stdout.write("   ");
-                });
-                console.log("");
-            });
-            console.log("");
-            */
-
-            //process.stdout.write("AdjacentsSize"+_.size(adjacents)+" ");
+            if(DEBUG_BFS) process.stdout.write("AdjacentsSize"+_.size(adjacents)+" ");
             _.each(adjacents, function(adj){
-                var contained = contains(clearedStages, adj.stage);
-                //process.stdout.write("AdjacentContained"+contained+" ");
-                if(!contained){ // Also need to check if new price is better =/
-                    /*)
-                    _.each(clearedStages, function(one, i){
-                        console.log("")
-                        console.log(i)
-                        printStages(one, adj.stage);
-                    });
-                    console.log("");
-                    */
-                    //process.stdout.write("Push ");
+
+                var genHashTime = _.now();
+                var newHash = generateHash(adj.stage);
+                totalGenHashTime += _.now() - genHashTime;
+
+                var contained = false;
+
+                var sameHash = _.findWhere(clearedStagesHashes, {hash: newHash});
+
+                if(!_.isUndefined(sameHash)){
+                    var containsTime = _.now();
+                    contained = contains(sameHash.itens, adj.stage);
+                    totalContainsTime += (_.now() - containsTime);
+                    totalContainsCount++;
+                }
+                if(DEBUG_BFS) process.stdout.write("AdjacentContained"+contained+" ");
+                if(_.isUndefined(sameHash) && !contained){ // Also need to check if new price is better =/
                     queue.push(adj);
                     clearedStages.push(adj.stage);
+                    clearedStagesHashes.push({hash: newHash, itens: [adj.stage]});
+                } else if(!_.isUndefined(sameHash) && !contained){
+                    queue.push(adj);
+                    clearedStages.push(adj.stage);
+                    sameHash.itens.push(adj.stage);
                 }
             })
         }
     }
-    //console.log("");
-    //console.log("Result: "+leafs);
-    //console.log("count = "+countDeques);
+    if(DEBUG_BFS) console.log("");
+    if(DEBUG_BFS) console.log("Result: "+leafs);
+    if(DEBUG_BFS) console.log("count = "+countDeques);
+    var cleanTime = _.now();
     _.each(leafs, function(leaf, t){
-        var tetriminoLocation = leaf.tetriminoLocation;
-        var shape = TETRIMINOS[tetriminoLocation.currentTetrimino][tetriminoLocation.foundShape];
-        var position = tetriminoLocation.foundPosition;
-        _.each(shape, function(fx, j){
-            _.each(fx, function(cell, i){
-                var cellGrid = _.findWhere(leaf.stage, {x: position[0] + i, y: position[1] + j});
-                if(!_.isUndefined(cellGrid) && cell){
-                    cellGrid.type = 'solid';
-                }
+        if(!_.isUndefined(leaf) &&
+            !_.isUndefined(leaf.foundShape) &&
+            !_.isUndefined(leaf.currentTetrimino) &&
+            !_.isUndefined(leaf.foundPosition)){
+            var tetriminoLocation = leaf.tetriminoLocation;
+            var shape = TETRIMINOS[tetriminoLocation.currentTetrimino][tetriminoLocation.foundShape];
+            var position = tetriminoLocation.foundPosition;
+            _.each(shape, function(fx, j){
+                _.each(fx, function(cell, i){
+                    var cellGrid = _.findWhere(leaf.stage, {x: position[0] + i, y: position[1] + j});
+                    if(!_.isUndefined(cellGrid) && cell){
+                        cellGrid.type = 'solid';
+                    }
+                });
             });
-        });
+        }
     });
+    totalCleanTime += (_.now() - cleanTime);
+    if(_.size(leafs) > 2){
+        if(PERF_BFS) console.log("totalIterateTime = "+totalIterateTime);
+        if(PERF_BFS) console.log("totalProduceTime = "+totalProduceTime);
+        if(PERF_BFS) console.log("totalContainsTime = "+totalContainsTime);
+        if(PERF_BFS) console.log("totalContainsCount = "+totalContainsCount);
+        if(PERF_BFS) console.log("time per contains = "+(totalContainsTime/totalContainsCount));
+        if(PERF_BFS) console.log("totalCleanTime = "+totalCleanTime);
+        if(PERF_BFS) console.log("totalLockTime = "+totalLockTime);
+        if(PERF_BFS) console.log("totalGenHashTime = "+totalGenHashTime);
+        if(PERF_BFS) console.log("totalTime = "+(_.now() - start));
+        if(PERF_BFS) console.log("");
+    }
     return leafs;
 }
 
@@ -725,23 +770,35 @@ var takeAction = function(){
     try{
         var now = _.now();
         if(now - lastAction > 1){
-            if(actions < 1000){
+            if(actions < 100000){
                 lastAction = now;
-                var query = ".tetristable.main td";
+                var query = ".driverInfo";
 
                 var result;
 
-                var tick = _.now();
+                var before = _.now();
                 browser.getAttribute(query, "data").then(function(elements){
                     try{
-                        var diff = _.now() - tick;
+                        var diff = (_.now() - before);
                         time += diff;
 
-                        var cells = _.map(elements, function(el){
-                            return JSON.parse(el);
+
+                        var cells = [];
+
+                        _.each(JSON.parse(elements), function(row, y){
+                            _.each(row, function(cell, x){
+                                cells.push({
+                                    "color": cell.color,
+                                    "type": cell.type,
+                                    "x": x,
+                                    "y": y,
+                                })
+                            });
                         });
 
                         var rows = _.groupBy(cells, "y");
+
+                        //console.log(rows);
 
                         if(false){
                             console.log("Evaluation value: "+evaluate(cells));
@@ -756,31 +813,28 @@ var takeAction = function(){
                         var tick = _.now();
                         //process.stdout.write("Calling bfs... ");
                         var leafNodes = bfs(cells);
-                        //console.log("returned in: "+(_.now() - tick));
+                        var size = _.size(leafNodes);
+                        if(PERF_TAKE_ACTION && size > 2) console.log("Browser = "+diff);
+                        if(PERF_TAKE_ACTION && size > 2) console.log("BFS = "+(_.now() - tick));
                         //console.log("Leafs: "+_.size(leafNodes));
 
+                        var tick = _.now();
                         var goal = _.sortBy(leafNodes, function(leaf){
                             return - evaluate(leaf.stage);
                         })[0];
+                        if(PERF_TAKE_ACTION && size > 2) console.log("Evaluate = "+(_.now() - tick));
 
+                        var tick = _.now();
                         if(!_.isUndefined(goal)){
                             var plan = goal.plan();
 
-                            //printStage(goal.stage);
+                            if(size > 2) printStage(goal.stage);
 
-                            //console.log(goal.tetriminoLocation);
-
-                            if(!_.isEmpty(plan)){
-                                process.stdout.write("Plan = ");
-                            }
                             _.each(plan, function(action){
-                                process.stdout.write(action+" ");
                                 driver[action]();
                             });
-                            if(!_.isEmpty(plan)){
-                                console.log("");
-                            }
                         }
+                        if(PERF_TAKE_ACTION && size > 2) console.log("Goal = "+(_.now() - tick));
 
                         actions++;
                         scheduleNextMove();
@@ -824,10 +878,10 @@ var run = function(){
 
 exports.run = run;
 exports.produceAdjacents = produceAdjacents;
-exports.exports = exports;
 exports.knownMoves = knownMoves;
 exports.Node = Node;
 exports.bfs = bfs;
 exports.evaluate = evaluate;
 exports.TETRIMINOS = TETRIMINOS;
 exports.printStage = printStage;
+exports.findPiece = findPiece;
